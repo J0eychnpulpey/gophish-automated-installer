@@ -29,7 +29,7 @@ The script automates the full deployment process on a DigitalOcean Droplet by pe
 1.  Connect to your Droplet as the `root` user.
 2.  Clone this repository to your server:
     ```bash
-    git clone https://github.com/your-username/gophish-automated-installer.git
+    git clone https://github.com/J0eychnpulpey/gophish-automated-installer.git
     cd gophish-automated-installer
     ```
 3.  Make the script executable:
