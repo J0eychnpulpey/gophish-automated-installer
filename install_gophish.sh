@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # A guided script to install and configure GoPhish on Ubuntu 22.04
-# MODIFIED: This version is designed to be run directly by the 'root' user.
+# VERSION: Production-Ready - Includes systemd service for auto-start on reboot.
 
-
-# --- Colors for better outpt --- 
+# --- Colors for better output ---
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
@@ -125,32 +124,63 @@ configure_gophish() {
     echo -e "${GREEN}config.json has been updated for HTTPS and CSRF protection.${NC}"
 }
 
-# Function to launch GoPhish and get credentials
-launch_and_report() {
-    print_step "Step 6: Launching GoPhish and capturing credentials..."
-    cd gophish
-    nohup ./gophish > ../gophish_output.log 2>&1 &
-  
-    echo "GoPhish is starting. Waiting 15 seconds to capture the temporary password..."
+# ---- NEW/IMPROVED FUNCTION ----
+# This function creates a systemd service to run GoPhish persistently.
+create_and_start_service() {
+    print_step "Step 6: Creating and starting GoPhish service..."
+
+    # Create the systemd service file
+    cat > /etc/systemd/system/gophish.service <<EOF
+[Unit]
+Description=GoPhish Phishing Framework
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/gophish
+ExecStart=/root/gophish/gophish
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Reload systemd, enable and start the service
+    systemctl daemon-reload
+    systemctl enable gophish > /dev/null 2>&1
+    systemctl start gophish
+
+    echo "GoPhish service created and started."
+    echo "Waiting 15 seconds for service to initialize..."
     sleep 15
-  
-    PASSWORD=$(grep "Please login with the username admin" ../gophish_output.log | awk '{print $NF}')
+    
+    # Check the status to make sure it's running
+    if ! systemctl is-active --quiet gophish; then
+        echo -e "${YELLOW}GoPhish service failed to start. Please check status with 'journalctl -u gophish.service'${NC}"
+        exit 1
+    fi
+
+    # Capture password from the system journal
+    PASSWORD=$(journalctl -u gophish.service -n 20 --no-pager | grep "Please login with the username admin" | tail -n 1 | awk '{print $NF}')
     PUBLIC_IP=$(curl -s ifconfig.me)
 
     if [ -z "$PASSWORD" ]; then
-        echo -e "${YELLOW}Could not capture password automatically. Please check 'gophish_output.log' for errors or credentials.${NC}"
+        echo -e "${YELLOW}Could not capture password automatically. Please check logs with 'journalctl -u gophish.service'${NC}"
     else
         echo -e "\n${GREEN}--- GoPhish Deployment Complete! ---${NC}"
-        echo -e "Admin Portal URL: ${YELLOW}http://"$PUBLIC_IP":3333${NC} (Note: HTTP, not HTTPS)"
+        echo -e "Admin Portal URL: ${YELLOW}http://"$PUBLIC_IP":3333${NC}"
         echo -e "Phishing URL:     ${YELLOW}https://$DOMAIN${NC}"
         echo -e "Username:         ${YELLOW}admin${NC}"
         echo -e "Password:         ${GREEN}${PASSWORD}${NC}"
-        echo -e "\nNOTE: You will be required to change this password on first login."
-        echo "GoPhish is running in the background. To stop it, run: pkill gophish"
+        echo -e "\nGoPhish is now running as a service and will start on reboot."
+        echo -e "Use ${GREEN}'systemctl status gophish'${NC} to check its status."
+        echo -e "Use ${GREEN}'systemctl stop gophish'${NC} to stop it."
     fi
-    cd ..
 }
-
 
 # --- Main script execution ---
 get_domain_name "$1"
@@ -159,4 +189,4 @@ setup_gophish
 manual_a_record_setup
 generate_ssl
 configure_gophish
-launch_and_report
+create_and_start_service # Replaced the old launch function
