@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # A guided script to install and configure GoPhish on Ubuntu 22.04
 # VERSION: Production-Ready - Includes systemd service for auto-start on reboot.
 
