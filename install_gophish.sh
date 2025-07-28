@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # A guided script to install and configure GoPhish on Ubuntu 22.04
 # VERSION: Production-Ready - Includes systemd service for auto-start on reboot.
 
@@ -124,11 +122,13 @@ configure_gophish() {
     echo -e "${GREEN}config.json has been updated for HTTPS and CSRF protection.${NC}"
 }
 
-# ---- NEW/IMPROVED FUNCTION ----
 # This function creates a systemd service to run GoPhish persistently.
 create_and_start_service() {
     print_step "Step 6: Creating and starting GoPhish service..."
 
+    # Important: Get the absolute path of the directory where the script is running
+    SCRIPT_DIR=$(pwd)
+    
     # Create the systemd service file
     cat > /etc/systemd/system/gophish.service <<EOF
 [Unit]
@@ -138,8 +138,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/gophish
-ExecStart=/root/gophish/gophish
+WorkingDirectory=${SCRIPT_DIR}/gophish
+ExecStart=${SCRIPT_DIR}/gophish/gophish
 Restart=always
 RestartSec=3
 StandardOutput=journal
@@ -178,7 +178,6 @@ EOF
         echo -e "Password:         ${GREEN}${PASSWORD}${NC}"
         echo -e "\nGoPhish is now running as a service and will start on reboot."
         echo -e "Use ${GREEN}'systemctl status gophish'${NC} to check its status."
-        echo -e "Use ${GREEN}'systemctl stop gophish'${NC} to stop it."
     fi
 }
 
@@ -189,4 +188,4 @@ setup_gophish
 manual_a_record_setup
 generate_ssl
 configure_gophish
-create_and_start_service # Replaced the old launch function
+create_and_start_service
