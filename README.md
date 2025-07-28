@@ -44,6 +44,35 @@ The script automates the full deployment process on a DigitalOcean Droplet by pe
 
 Once the script completes, it will display the URL and credentials for your GoPhish admin portal.
 
+## Post-Installation
+
+Once the script is complete, your GoPhish instance will be running as a **persistent system service**. This means it will automatically start every time the server boots.
+
+You can manage the GoPhish service using the standard `systemctl` commands:
+
+-   **Check the status and see recent logs**:
+    ```bash
+    systemctl status gophish
+    ```
+-   **Stop the GoPhish service**:
+    ```bash
+    systemctl stop gophish
+    ```
+-   **Start the GoPhish service**:
+    ```bash
+    systemctl start gophish
+    ```
+-   **Restart the service after making changes**:
+    ```bash
+    systemctl restart gophish
+    ```
+-   **View all historical logs**:
+    ```bash
+    journalctl -u gophish.service
+    ```
+
+
+
 ---
 
 ### Troubleshooting Common Issues
