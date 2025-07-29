@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # A guided script to install and configure GoPhish on Ubuntu 22.04
-# VERSION: Production-Ready - Includes systemd service for auto-start on reboot.
+# VERSION: Production-Ready - All-in-One
+# This script sets up the GoPhish server and generates a client-side script
+# for the persistent reverse SSH tunnel.
 
 # --- Colors for better output ---
 GREEN='\033[0;32m'
@@ -125,13 +127,13 @@ configure_gophish() {
 }
 
 # This function creates a systemd service to run GoPhish persistently.
-create_and_start_service() {
+create_gophish_service() {
     print_step "Step 6: Creating and starting GoPhish service..."
 
-    # Important: Get the absolute path of the directory where the script is running
+    # Get the absolute path of the directory where the script is running
     SCRIPT_DIR=$(pwd)
     
-    # Create the systemd service file
+    # Create the systemd service file with the correct, absolute paths
     cat > /etc/systemd/system/gophish.service <<EOF
 [Unit]
 Description=GoPhish Phishing Framework
@@ -156,8 +158,7 @@ EOF
     systemctl enable gophish > /dev/null 2>&1
     systemctl start gophish
 
-    echo "GoPhish service created and started."
-    echo "Waiting 15 seconds for service to initialize..."
+    echo "GoPhish service created and started. Waiting 15s to initialize..."
     sleep 15
     
     # Check the status to make sure it's running
@@ -173,14 +174,81 @@ EOF
     if [ -z "$PASSWORD" ]; then
         echo -e "${YELLOW}Could not capture password automatically. Please check logs with 'journalctl -u gophish.service'${NC}"
     else
-        echo -e "\n${GREEN}--- GoPhish Deployment Complete! ---${NC}"
+        echo -e "\n${GREEN}--- GoPhish Server Deployed! ---${NC}"
         echo -e "Admin Portal URL: ${YELLOW}http://"$PUBLIC_IP":3333${NC}"
         echo -e "Phishing URL:     ${YELLOW}https://$DOMAIN${NC}"
         echo -e "Username:         ${YELLOW}admin${NC}"
         echo -e "Password:         ${GREEN}${PASSWORD}${NC}"
-        echo -e "\nGoPhish is now running as a service and will start on reboot."
-        echo -e "Use ${GREEN}'systemctl status gophish'${NC} to check its status."
     fi
+}
+
+# This function generates the client-side script for the user.
+generate_tunnel_script() {
+    print_step "Step 7: Generate Client-Side Tunnel Script"
+    PUBLIC_IP=$(curl -s ifconfig.me)
+    echo -e "${YELLOW}ACTION REQUIRED: The final step is to set up the persistent email tunnel on your local Kali VM.${NC}"
+    echo "------------------------------------------------------------------"
+    echo -e "1.  On your Kali VM, set up passwordless SSH to this server by running:"
+    echo -e "    ${GREEN}ssh-copy-id root@${PUBLIC_IP}${NC}"
+    echo -e "    (You will need to enter your server's root password one last time)."
+    echo
+    echo -e "2.  After that is done, copy the ENTIRE script block below (from #!/bin/bash to the end)."
+    echo -e "3.  Paste it into a new file on your Kali VM, for example: ${GREEN}nano setup_tunnel.sh${NC}"
+    echo -e "4.  Make it executable: ${GREEN}chmod +x setup_tunnel.sh${NC}"
+    echo -e "5.  Run it with sudo: ${GREEN}sudo ./setup_tunnel.sh${NC}"
+    echo "------------------------------------------------------------------"
+    echo
+    # The generated script starts here
+    # A temporary file is used to safely inject the server's IP
+    
+    TUNNEL_SCRIPT=$(cat <<'EOF'
+#!/bin/bash
+# This script creates a persistent reverse SSH tunnel as a systemd service.
+# Run this on your local machine (e.g., Kali VM), NOT the GoPhish server.
+
+REMOTE_USER="root"
+REMOTE_HOST="YOUR_SERVER_IP_HERE" # This is a placeholder
+LOCAL_PORT="2525"
+REMOTE_SMTP="smtp-relay.gmail.com"
+REMOTE_PORT="587"
+SERVICE_NAME="gophish-tunnel"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+
+echo ">>> Creating systemd service for persistent SSH tunnel..."
+
+# Create the systemd service file
+# Note: Requires passwordless SSH key authentication to be set up.
+sudo bash -c "cat > ${SERVICE_FILE}" <<EOT
+[Unit]
+Description=GoPhish Reverse SSH Tunnel Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=$(whoami)
+ExecStart=/usr/bin/ssh -N -R ${LOCAL_PORT}:${REMOTE_SMTP}:${REMOTE_PORT} ${REMOTE_USER}@${REMOTE_HOST} -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOT
+
+echo ">>> Enabling and starting the tunnel service..."
+sudo systemctl daemon-reload
+sudo systemctl enable ${SERVICE_NAME} > /dev/null 2>&1
+sudo systemctl start ${SERVICE_NAME}
+
+echo ">>> Checking service status..."
+sleep 3
+sudo systemctl status ${SERVICE_NAME} --no-pager
+
+echo -e "\n--- Persistent Tunnel Setup Complete! ---"
+EOF
+)
+
+    # Replace the placeholder IP with the actual server IP and print the script
+    echo "${TUNNEL_SCRIPT/YOUR_SERVER_IP_HERE/$PUBLIC_IP}"
 }
 
 # --- Main script execution ---
@@ -190,4 +258,5 @@ setup_gophish
 manual_a_record_setup
 generate_ssl
 configure_gophish
-create_and_start_service
+create_gophish_service
+generate_tunnel_script
