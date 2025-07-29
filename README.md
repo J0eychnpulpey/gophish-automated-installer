@@ -1,4 +1,4 @@
-# GoPhish Automated Installer Script version 3
+# GoPhish Automated Installer Script
 
 This repository contains a Bash script that automates the deployment of a GoPhish phishing server, specifically tested and designed for an **Ubuntu 22.04 Droplet on DigitalOcean**. This project fulfills the "Automate With a Script" challenge from the SimplyCyber Academy.
 
@@ -10,10 +10,10 @@ The script automates all **server-side** tasks and provides clear guidance for n
 
 -   **System Preparation**: Updates the server and installs dependencies (`unzip`, `certbot`, `jq`).
 -   **GoPhish Installation**: Downloads and extracts the official GoPhish binary.
--   **Guided DNS & SSL**: Pauses and provides explicit instructions for creating `A` and `TXT` records in your DNS provider to obtain a valid SSL certificate.
+-   **Guided DNS & SSL**: Provides explicit instructions for creating `A` and `TXT` records in your DNS provider to obtain a valid SSL certificate.
 -   **Automated Configuration**: Modifies the `config.json` file for secure HTTPS, remote admin access, and CSRF protection.
 -   **Persistent Service Creation**: Automatically creates a `systemd` service to ensure GoPhish runs persistently and starts on server reboot.
--   **Client Script Generation**: At the end of the process, it generates a new script for you to run on your local machine (e.g., Kali VM) to create a persistent reverse SSH tunnel.
+-   **Client Script Generation**: At the end of the process, it generates a new, robust script for you to run on your local machine (e.g., Kali VM) to create a persistent reverse SSH tunnel.
 
 ---
 
@@ -21,7 +21,7 @@ The script automates all **server-side** tasks and provides clear guidance for n
 
 **ACTION REQUIRED**: Before running the installer script, you must manually configure a Google account to handle email sending.
 
-### A. Configure Your Google Account for SMTP Relay
+### A. Configure Your Google Account for Email Sending
 
 1.  **Enable 2-Factor Authentication (2FA)**
     This is **mandatory** before you can create an App Password.
@@ -89,6 +89,8 @@ Once the full process is complete, you will have two persistent services running
     -   Check Status: `sudo systemctl status gophish-tunnel`
     -   Stop: `sudo systemctl stop gophish-tunnel`
     -   Start: `sudo systemctl start gophish-tunnel`
+
+---
 
 
 ## Resetting the Environment (Full Cleanup)
