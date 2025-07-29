@@ -90,5 +90,37 @@ Once the full process is complete, you will have two persistent services running
     -   Stop: `sudo systemctl stop gophish-tunnel`
     -   Start: `sudo systemctl start gophish-tunnel`
 
+
+## Resetting the Environment (Full Cleanup)
+
+If you need to start over from a completely clean slate, follow these steps to remove all components created by this script.
+
+### Step 1: Cleanup on the Server (DigitalOcean Droplet)
+Run the following commands as `root` on your Droplet:
+
+```bash
+# Stop and disable the GoPhish service
+systemctl stop gophish
+systemctl disable gophish
+
+# Remove the service file and reload the systemd daemon
+rm /etc/systemd/system/gophish.service
+systemctl daemon-reload
+
+# Go to the home directory and remove all project files
+cd ~
+rm -rf gophish-automated-installer
+
+# Remove Certbot SSL certificate data
+rm -rf /etc/letsencrypt
+```
+
+### Step 2: Cleanup on your DNS Provider (Namecheap)
+1.  Log in to your Namecheap account and go to your domain's **Advanced DNS** settings.
+2.  Delete the **`A` Record** that points to your Droplet's IP address.
+3.  Delete the **`TXT` Record** that starts with `_acme-challenge`.
+4.  Save all changes.
+
+After completing these steps, your environment is fully reset and ready for a fresh installation.
 ---
 **Disclaimer**: This tool is for educational and authorized professional use only.
