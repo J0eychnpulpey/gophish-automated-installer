@@ -1,6 +1,6 @@
 # GoPhish Automated Installer Script
 
-This repository contains a Bash script that automates the deployment of a GoPhish phishing server, specifically tested and designed for an **Ubuntu 22.04 Droplet on DigitalOcean**. This project fulfills the "Automate With a Script" challenge from the SimplyCyber Academy.
+This repository contains a Bash script that automates the deployment of a GoPhish phishing server, specifically tested and designed for an **Ubuntu 22.04 Droplet on DigitalOcean**. This project fulfills from Tyler Ramsbey Hands-On Phishing Course (Automate With a Script challenge).
 
 The script uses an "all-in-one" approach: you run a single script on the server, which then generates a second script needed for your local client machine to create a persistent email relay tunnel.
 
